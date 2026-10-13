@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="de" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FH-Sports Manager - Hochschul-Fußball</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            900: '#0b0f19',
+                            800: '#111827',
+                            700: '#1f2937',
+                            600: '#374151'
+                        },
+                        accent: {
+                            green: '#10b981',
+                            blue: '#3b82f6',
+                            gold: '#f59e0b',
+                            orange: '#f97316',
+                            red: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        /* Pitch Gradient & Lines */
+        .pitch-bg {
+            background: linear-gradient(135deg, #0d3b1e 0%, #082412 100%);
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .pitch-line {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            pointer-events: none;
+        }
+
+        .rating-up {
+            animation: pulse-green 1s ease-out;
+        }
+
+        .rating-down {
+            animation: pulse-red 1s ease-out;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1.2); background-color: #059669; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1.2); background-color: #dc2626; }
+            100% { transform: scale(1); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-navy-900 text-gray-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- TOP HEADER -->
+    <header class="bg-navy-800 border-b border-gray-800 sticky top-0 z-50 px-4 py-3 flex flex-wrap justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-accent-blue to-accent-orange p-2.5 rounded-xl text-white shadow-md">
+                <i class="fa-solid fa-futbol text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">FH-Sports Manager</h1>
+                <p class="text-xs text-gray-400 mt-0.5">Hochschulliga • <span id="currentSemesterLabel">WS 2024/25</span></p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+            <!-- Favorite Team Selector -->
+            <div class="flex items-center space-x-2 bg-navy-900/80 px-3 py-1.5 rounded-lg border border-gray-700">
+                <i class="fa-solid fa-heart text-red-500 text-sm"></i>
+                <label for="favTeamSelect" class="text-xs text-gray-400">Lieblingsteam:</label>
+                <select id="favTeamSelect" onchange="changeFavoriteTeam(this.value)" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer">
+                    <!-- Dynamic teams -->
+                </select>
+            </div>
+
+            <!-- Admin Mode Toggle -->
+            <button onclick="toggleAdminMode()" id="adminBtn" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 bg-navy-700 hover:bg-gray-700 transition">
+                <i class="fa-solid fa-user-gear"></i>
+                <span id="adminStatus">Admin: AUS</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN WRAPPER -->
+    <div class="flex-1 flex flex-col md:flex-row">
+
+        <!-- NAVIGATION SIDEBAR -->
+        <aside class="w-full md:w-64 bg-navy-800 border-r border-gray-800 p-4 shrink-0">
+            <nav class="space-y-1">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-white bg-accent-blue/20 border border-accent-blue/40">
+                    <i class="fa-solid fa-house text-accent-blue"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('tournament')" id="tab-tournament" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-diagram-project text-gray-400"></i>
+                    <span>Turnierbaum & Live</span>
+                </button>
+                <button onclick="switchTab('squad')" id="tab-squad" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-users text-gray-400"></i>
+                    <span>Teams & Kader (4-3-3)</span>
+                </button>
+                <button onclick="switchTab('algorithms')" id="tab-algorithms" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-brain text-accent-orange"></i>
+                    <span>Algorithmen (1A & 1B)</span>
+                </button>
+                <button onclick="switchTab('table')" id="tab-table" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-list-ol text-gray-400"></i>
+                    <span>Ligatabelle & Stats</span>
+                </button>
+            </nav>
+
+            <!-- Algorithm status box -->
+            <div class="mt-8 p-3.5 bg-navy-900/60 rounded-xl border border-gray-800 text-xs text-gray-400 space-y-2">
+                <div class="flex justify-between items-center text-gray-300 font-semibold border-b border-gray-800 pb-1.5">
+                    <span><i class="fa-solid fa-microchip text-accent-blue mr-1"></i> AI Simulation</span>
+                    <span class="text-accent-green">Active</span>
+                </div>
+                <p><strong>1A (Internal):</strong> Fatigue, Form, Home</p>
+                <p><strong>1B (AI-Driven):</strong> Tactics, Coach, Travel</p>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto">
+
+            <!-- TAB 0: DASHBOARD -->
+            <section id="sec-dashboard" class="space-y-6">
+                <div class="bg-gradient-to-r from-navy-800 to-navy-700 p-6 rounded-2xl border border-gray-700 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="space-y-2">
+                        <span class="bg-accent-blue/20 text-accent-blue border border-accent-blue/30 text-xs font-bold px-3 py-1 rounded-full">Schülerliga & Hochschul-Cup 2026/27</span>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-white">Willkommen beim FH-Sports Manager</h2>
+                        <p class="text-sm text-gray-300 max-w-xl">Verwalte dein Team, simuliere die österreichische Hochschulmeisterschaft mit 12 einzigartigen Teams, setze Algorithmen ein und verfolge das Live-Finale mit FotMob-Bewertungen!</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="switchTab('tournament')" class="px-5 py-3 bg-accent-blue hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-play"></i> Zum Turnierbaum
+                        </button>
+                        <button onclick="switchTab('squad')" class="px-5 py-3 bg-navy-600 hover:bg-gray-600 text-white font-semibold rounded-xl border border-gray-600 transition flex items-center gap-2">
+                            <i class="fa-solid fa-users"></i> Kader ansehen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-blue/20 text-accent-blue rounded-xl"><i class="fa-solid fa-shield-halved text-xl"></i></div>
+                        <div>
+                            <div class="text-xs text-gray-400">Teilnehmende Teams</div>
+                            <div class="text-xl font-extrabold text-white">12 Unis & HTLs</div>
+                        </div>
+                    </div>
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-green/20 text-accent-green rounded-xl"><i class="fa-solid fa-user-group text-xl"></i></div>
+                        <div>
+                            <div class="text-xs text-gray-400">Spieler im Kader</div>
+                            <div class="text-xl font-extrabold text-white">192 Aktive</div>
+                        </div>
+                    </div>
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-gold/20 text-accent-gold rounded-xl"><i class="fa-solid fa-trophy text-xl"></i></div>
+                        <div>
+                            <div class="text-xs text-gray-400">Turnier-Modus</div>
+                            <div class="text-xl font-extrabold text-white">K.-o. & Liga</div>
+                        </div>
+                    </div>
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-orange/20 text-accent-orange rounded-xl"><i class="fa-solid fa-brain text-xl"></i></div>
+                        <div>
+                            <div class="text-xs text-gray-400">Engine-Version</div>
+                            <div class="text-xl font-extrabold text-white">Algorithmus 1A/1B</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Favorite Team Showcase -->
+                <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg space-y-4">
+                    <h3 class="font-bold text-white text-base flex items-center gap-2">
+                        <i class="fa-solid fa-heart text-red-500"></i> Aktuelles Lieblingsteam im Fokus
+                    </h3>
+                    <div id="favoriteTeamShowcase" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-navy-900 p-4 rounded-xl border border-gray-800">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 1: TOURNAMENT & LIVE MATCH -->
+            <section id="sec-tournament" class="hidden space-y-6">
+                <!-- CONTROLS -->
+                <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col lg:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sitemap text-accent-blue"></i> Hochschul-Cup 2026 Turniersimulation
+                        </h2>
+                        <p class="text-sm text-gray-400 mt-1">Stufe 1: Viertel- & Halbfinale simulieren. Stufe 2: 90-Sekunden Live-Finale verfolgen.</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 w-full lg:w-auto">
+                        <button id="btnSimStage1" onclick="simulateStage1()" class="flex-1 lg:flex-none px-5 py-2.5 bg-accent-blue hover:bg-blue-600 text-white font-semibold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-forward-step"></i>
+                            <span>Stufe 1: Bis Halbfinale simulieren</span>
+                        </button>
+                        
+                        <button id="btnStartLiveFinal" onclick="startLiveFinal()" disabled class="flex-1 lg:flex-none px-5 py-2.5 bg-gray-700 opacity-50 cursor-not-allowed text-white font-semibold rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Stufe 2: Finale Live (90 Sek.)</span>
+                        </button>
+
+                        <button onclick="resetTournament()" class="px-3 py-2.5 bg-navy-700 hover:bg-gray-700 text-gray-300 rounded-xl transition border border-gray-700" title="Turnier zurücksetzen">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIVE FINALE DASHBOARD -->
+                <div id="liveFinalDashboard" class="hidden bg-navy-800 rounded-2xl border border-gray-800 p-5 shadow-2xl space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-gray-800 pb-5">
+                        <div class="flex items-center space-x-4 w-full md:w-1/3 justify-start">
+                            <div class="w-12 h-12 rounded-xl bg-accent-blue/20 border border-accent-blue flex items-center justify-center text-accent-blue font-bold text-lg" id="finalTeamAIcon">T1</div>
+                            <div>
+                                <h3 class="font-bold text-lg text-white" id="finalTeamAName">Team Alpha</h3>
+                                <p class="text-xs text-gray-400" id="finalTeamAForm">Form: ★★★★☆</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-center justify-center w-full md:w-1/3 my-2 md:my-0">
+                            <div class="flex items-center space-x-2 bg-navy-900 px-4 py-1.5 rounded-full border border-gray-700 mb-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" id="liveDot"></span>
+                                <span class="text-xs font-mono font-bold text-red-400" id="liveStatusText">LIVE</span>
+                                <span class="text-xs font-mono font-bold text-white border-l border-gray-700 pl-2" id="matchTimer">00' (0s)</span>
+                            </div>
+                            <div class="text-4xl font-black tracking-widest text-white" id="finalScore">0 - 0</div>
+                            <div class="text-[11px] text-gray-400 mt-1">1 Sekunde = 1 Spielminute</div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 w-full md:w-1/3 justify-end text-right">
+                            <div>
+                                <h3 class="font-bold text-lg text-white" id="finalTeamBName">Team Beta</h3>
+                                <p class="text-xs text-gray-400" id="finalTeamBForm">Form: ★★★★☆</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-accent-green/20 border border-accent-green flex items-center justify-center text-accent-green font-bold text-lg" id="finalTeamBIcon">T2</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        <!-- FotMob 11v11 Pitch -->
+                        <div class="lg:col-span-8 bg-navy-900 rounded-2xl p-4 border border-gray-800 flex flex-col">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-chalkboard-user text-accent-blue"></i> Live FotMob 4-3-3 Ratings
+                                </span>
+                                <div class="flex items-center space-x-2 text-[11px]">
+                                    <button onclick="switchPitchTeam('A')" id="pitchBtnA" class="px-2.5 py-1 rounded bg-accent-blue text-white font-medium">Team A</button>
+                                    <button onclick="switchPitchTeam('B')" id="pitchBtnB" class="px-2.5 py-1 rounded bg-navy-700 text-gray-300 hover:bg-gray-700 font-medium">Team B</button>
+                                </div>
+                            </div>
+
+                            <div class="pitch-bg rounded-xl flex-1 min-h-[380px] p-4 relative overflow-hidden flex flex-col justify-between">
+                                <div class="pitch-line inset-2 rounded-lg"></div>
+                                <div class="pitch-line top-1/2 left-2 right-2 -translate-y-1/2 border-t"></div>
+                                <div class="pitch-line top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border"></div>
+                                <div class="pitch-line top-2 left-1/2 -translate-x-1/2 w-36 h-16 border-t-0"></div>
+                                <div class="pitch-line bottom-2 left-1/2 -translate-x-1/2 w-36 h-16 border-b-0"></div>
+
+                                <div id="pitchFormation" class="relative w-full h-full min-h-[350px] flex flex-col justify-between z-10 py-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Ticker -->
+                        <div class="lg:col-span-4 bg-navy-900 rounded-2xl p-4 border border-gray-800 flex flex-col h-[440px]">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-accent-gold"></i> Live-Match Ticker & Algorithmus-Ereignisse
+                            </h4>
+                            <div id="tickerContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1 text-xs">
+                                <div class="text-gray-500 italic text-center py-8">Das Spiel steht bereit. Klicken Sie auf "Stufe 2: Finale Live", um zu starten.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOURNAMENT BRACKET GRAPHIC -->
+                <div class="bg-navy-800 rounded-2xl border border-gray-800 p-6 shadow-lg overflow-x-auto">
+                    <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-diagram-nested text-accent-blue"></i> Turnierbaum Hochschul-Cup (Start 0:0)
+                    </h3>
+
+                    <div class="min-w-[700px] grid grid-cols-3 gap-6 relative">
+                        <!-- QUARTERFINALS -->
+                        <div class="space-y-6">
+                            <h4 class="text-xs font-semibold text-gray-400 text-center uppercase tracking-wider border-b border-gray-700 pb-2">Viertelfinale</h4>
+                            <div class="bg-navy-900 border border-gray-700 rounded-xl p-3 space-y-2" id="qf1-card">
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf1-t1"><span>Team 1</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf1-t2"><span>Team 2</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                            </div>
+                            <div class="bg-navy-900 border border-gray-700 rounded-xl p-3 space-y-2" id="qf2-card">
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf2-t1"><span>Team 3</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf2-t2"><span>Team 4</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                            </div>
+                            <div class="bg-navy-900 border border-gray-700 rounded-xl p-3 space-y-2" id="qf3-card">
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf3-t1"><span>Team 5</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf3-t2"><span>Team 6</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                            </div>
+                            <div class="bg-navy-900 border border-gray-700 rounded-xl p-3 space-y-2" id="qf4-card">
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf4-t1"><span>Team 7</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                                <div class="flex justify-between items-center text-xs font-semibold" id="qf4-t2"><span>Team 8</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                            </div>
+                        </div>
+
+                        <!-- SEMIFINALS -->
+                        <div class="space-y-16 pt-8">
+                            <h4 class="text-xs font-semibold text-gray-400 text-center uppercase tracking-wider border-b border-gray-700 pb-2">Halbfinale</h4>
+                            <div class="bg-navy-900 border border-gray-700 rounded-xl p-3 space-y-2" id="sf1-card">
+                                <div class="flex justify-between items-center text-xs font-semibold" id="sf1-t1"><span class="text-gray-500">Sieger QF 1</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                                <div class="flex justify-between items-center text-xs font-semibold" id="sf1-t2"><span class="text-gray-500">Sieger QF 2</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                            </div>
+                            <div class="bg-navy-900 border border-gray-700 rounded-xl p-3 space-y-2" id="sf2-card">
+                                <div class="flex justify-between items-center text-xs font-semibold" id="sf2-t1"><span class="text-gray-500">Sieger QF 3</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                                <div class="flex justify-between items-center text-xs font-semibold" id="sf2-t2"><span class="text-gray-500">Sieger QF 4</span> <span class="font-bold border px-1.5 py-0.5 rounded bg-navy-800">0</span></div>
+                            </div>
+                        </div>
+
+                        <!-- FINAL -->
+                        <div class="space-y-20 pt-20">
+                            <h4 class="text-xs font-semibold text-accent-gold text-center uppercase tracking-wider border-b border-accent-gold/40 pb-2">
+                                <i class="fa-solid fa-crown mr-1"></i> Finale
+                            </h4>
+                            <div class="bg-gradient-to-b from-navy-900 to-navy-800 border-2 border-accent-gold/50 rounded-xl p-4 space-y-3 shadow-xl" id="final-card">
+                                <div class="flex justify-between items-center text-sm font-bold" id="final-t1">
+                                    <span class="text-gray-500">Finalist 1</span> <span class="border px-2 py-0.5 rounded bg-navy-800">0</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm font-bold" id="final-t2">
+                                    <span class="text-gray-500">Finalist 2</span> <span class="border px-2 py-0.5 rounded bg-navy-800">0</span>
+                                </div>
+                                <div id="winnerBanner" class="hidden text-center bg-accent-gold/20 text-accent-gold border border-accent-gold/40 rounded-lg py-1.5 font-extrabold text-xs">
+                                    🏆 TURNIERSIEGER: <span id="winnerText">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: TEAMS & SQUADS (4-3-3) -->
+            <section id="sec-squad" class="hidden space-y-6">
+                <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-users text-accent-blue"></i> 12 Österreichische Universitäten & Kader (4-3-3)
+                        </h2>
+                        <p class="text-sm text-gray-400">11 Startspieler + Ersatzbank, Studiengang & Sterne-Rating (1.0 - 5.0)</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs text-gray-400">Team wählen:</span>
+                        <select id="squadTeamSelect" onchange="renderSquadTable(this.value)" class="bg-navy-900 text-white border border-gray-700 px-3 py-1.5 rounded-xl text-sm font-semibold cursor-pointer">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Squad List Table -->
+                <div class="bg-navy-800 rounded-2xl border border-gray-800 p-4 shadow-lg overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-navy-900 text-xs uppercase text-gray-400 border-b border-gray-700">
+                            <tr>
+                                <th class="p-3">Pos</th>
+                                <th class="p-3">Spieler Name</th>
+                                <th class="p-3">Studiengang</th>
+                                <th class="p-3">Alter</th>
+                                <th class="p-3">Sterne-Rating</th>
+                                <th class="p-3">Form</th>
+                                <th class="p-3 text-right">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="squadTableBody" class="divide-y divide-gray-800">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- TAB 3: ALGORITHMS 1A & 1B MODIFIER PANEL -->
+            <section id="sec-algorithms" class="hidden space-y-6">
+                <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-accent-orange"></i> Algorithmen-Modulator (1A & 1B Engine)
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Passe die Simulationseinflüsse an, um das Verhalten und die Match-Wahrscheinlichkeiten live zu steuern.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Algorithmus 1A (Internal) -->
+                    <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg space-y-4">
+                        <h3 class="font-bold text-white text-base flex items-center justify-between border-b border-gray-700 pb-2">
+                            <span><i class="fa-solid fa-gears text-accent-blue mr-1"></i> Algorithmus 1A (Intern)</span>
+                            <span class="text-xs text-accent-green">Aktiv</span>
+                        </h3>
+                        
+                        <div class="space-y-3 text-xs text-gray-300">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span>Heimvorteil-Faktor</span>
+                                    <span id="valHomeAdv" class="font-bold text-accent-blue">3.5</span>
+                                </div>
+                                <input type="range" min="0" max="10" step="0.5" value="3.5" oninput="updateAlgoParam('homeAdv', this.value)" class="w-full accent-blue-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span>Ermüdung & Belastung</span>
+                                    <span id="valFatigue" class="font-bold text-accent-blue">2.0</span>
+                                </div>
+                                <input type="range" min="0" max="5" step="0.5" value="2.0" oninput="updateAlgoParam('fatigue', this.value)" class="w-full accent-blue-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span>Form-Schwankungen</span>
+                                    <span id="valFormVar" class="font-bold text-accent-blue">4.0</span>
+                                </div>
+                                <input type="range" min="1" max="10" step="0.5" value="4.0" oninput="updateAlgoParam('formVar', this.value)" class="w-full accent-blue-500 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Algorithmus 1B (AI-Driven) -->
+                    <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg space-y-4">
+                        <h3 class="font-bold text-white text-base flex items-center justify-between border-b border-gray-700 pb-2">
+                            <span><i class="fa-solid fa-microchip text-accent-orange mr-1"></i> Algorithmus 1B (KI-Driven)</span>
+                            <span class="text-xs text-accent-orange">Aktiv</span>
+                        </h3>
+
+                        <div class="space-y-3 text-xs text-gray-300">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span>Taktische Flexibilität (Pressing)</span>
+                                    <span id="valTactical" class="font-bold text-accent-orange">5.0</span>
+                                </div>
+                                <input type="range" min="1" max="10" step="0.5" value="5.0" oninput="updateAlgoParam('tactical', this.value)" class="w-full accent-orange-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span>Trainer-Einfluss & Coaching</span>
+                                    <span id="valCoach" class="font-bold text-accent-orange">3.0</span>
+                                </div>
+                                <input type="range" min="0" max="8" step="0.5" value="3.0" oninput="updateAlgoParam('coach', this.value)" class="w-full accent-orange-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span>Reise- & Anfahrtsmüdigkeit</span>
+                                    <span id="valTravel" class="font-bold text-accent-orange">1.5</span>
+                                </div>
+                                <input type="range" min="0" max="5" step="0.5" value="1.5" oninput="updateAlgoParam('travel', this.value)" class="w-full accent-orange-500 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-white text-sm">Simulator-Testlauf</h4>
+                        <p class="text-xs text-gray-400">Teste die veränderten Algorithmus-Parameter sofort mit einem Zufallstestspiel.</p>
+                    </div>
+                    <button onclick="runAlgorithmTestMatch()" class="px-4 py-2.5 bg-accent-orange hover:bg-orange-600 text-white font-bold rounded-xl text-xs transition shadow">
+                        Testlauf starten
+                    </button>
+                </div>
+            </section>
+
+            <!-- TAB 4: LEAGUE TABLE & STATS -->
+            <section id="sec-table" class="hidden space-y-6">
+                <div class="bg-navy-800 p-5 rounded-2xl border border-gray-800 shadow-lg">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-accent-blue"></i> Ligatabelle & Statistik (12 Teams)
+                    </h2>
+                    <p class="text-sm text-gray-400 mt-1">Gesamtwertung aller teilnehmenden Hochschulen & HTLs in Österreich.</p>
+                </div>
+
+                <div class="bg-navy-800 rounded-2xl border border-gray-800 p-4 shadow-lg overflow-x-auto">
+                    <table class="w-full text-left text-sm text-gray-300">
+                        <thead class="bg-navy-900 text-xs uppercase text-gray-400 border-b border-gray-700">
+                            <tr>
+                                <th class="p-3">Pl</th>
+                                <th class="p-3">Team</th>
+                                <th class="p-3 text-center">Sp</th>
+                                <th class="p-3 text-center">S</th>
+                                <th class="p-3 text-center">U</th>
+                                <th class="p-3 text-center">N</th>
+                                <th class="p-3 text-center">Tore</th>
+                                <th class="p-3 text-center">Diff</th>
+                                <th class="p-3 text-center font-bold text-white">Punkte</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leagueTableBody" class="divide-y divide-gray-800">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- PLAYER PROFILE MODAL -->
+    <div id="playerModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-navy-800 border border-gray-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
+            <button onclick="closePlayerModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center space-x-4 border-b border-gray-700 pb-4">
+                <div class="w-14 h-14 rounded-2xl bg-accent-blue/20 border border-accent-blue flex items-center justify-center text-accent-blue font-bold text-xl" id="modalPlayerPos">TW</div>
+                <div>
+                    <h3 class="font-bold text-lg text-white" id="modalPlayerName">Spieler Name</h3>
+                    <p class="text-xs text-gray-400" id="modalPlayerTeam">Team Name</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="bg-navy-900 p-3 rounded-xl border border-gray-800">
+                    <span class="text-gray-400 block">Studiengang</span>
+                    <span class="font-bold text-white text-sm" id="modalPlayerStudy">Computer Science B.Sc.</span>
+                </div>
+                <div class="bg-navy-900 p-3 rounded-xl border border-gray-800">
+                    <span class="text-gray-400 block">Sterne-Rating</span>
+                    <span class="font-bold text-accent-gold text-sm" id="modalPlayerStars">★★★★☆ (4.5)</span>
+                </div>
+                <div class="bg-navy-900 p-3 rounded-xl border border-gray-800">
+                    <span class="text-gray-400 block">Tore / Vorlagen</span>
+                    <span class="font-bold text-accent-green text-sm" id="modalPlayerGoals">0 / 0</span>
+                </div>
+                <div class="bg-navy-900 p-3 rounded-xl border border-gray-800">
+                    <span class="text-gray-400 block">Form-Status</span>
+                    <span class="font-bold text-accent-blue text-sm">Topfit (94%)</span>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Match-Historie</h4>
+                <div id="modalPlayerHistory" class="space-y-1.5 text-xs text-gray-300">
+                    <div class="bg-navy-900 p-2 rounded flex justify-between"><span>vs. HTL Mödling (2:1)</span><span class="text-accent-green font-bold">8.4 Rating</span></div>
+                    <div class="bg-navy-900 p-2 rounded flex justify-between"><span>vs. TU Graz (1:1)</span><span class="text-accent-green font-bold">7.8 Rating</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // GLOBAL STATE & DATA
+        let isAdmin = false;
+        let activeFavoriteTeamId = 't1';
+        let activePitchTeam = 'A';
+
+        // 12 UNIQUE AUSTRIAN UNIVERSITY & COLLEGE TEAMS
+        const teamsData = [
+            { id: 't1', name: 'FH Technikum Lions', city: 'Wien', color: '#3b82f6', rating: 84, studiengang: 'Technik & IT', form: 4.5, points: 27, played: 10, w: 9, d: 0, l: 1, gf: 32, ga: 10 },
+            { id: 't2', name: 'HTL Mödling Wolves', city: 'Niederösterreich', color: '#10b981', rating: 82, studiengang: 'Ingenieurwesen', form: 4.0, points: 24, played: 10, w: 8, d: 0, l: 2, gf: 28, ga: 12 },
+            { id: 't3', name: 'TU Graz Spartans', city: 'Steiermark', color: '#f59e0b', rating: 81, studiengang: 'Technische Wissenschaften', form: 4.0, points: 22, played: 10, w: 7, d: 1, l: 2, gf: 25, ga: 14 },
+            { id: 't4', name: 'MCI Innsbruck Mountaineers', city: 'Tirol', color: '#ef4444', rating: 79, studiengang: 'Management & Law', form: 3.5, points: 19, played: 10, w: 6, d: 1, l: 3, gf: 21, ga: 15 },
+            { id: 't5', name: 'FH Joanneum Panthers', city: 'Graz', color: '#8b5cf6', rating: 78, studiengang: 'Medizin & Wirtschaft', form: 3.5, points: 17, played: 10, w: 5, d: 2, l: 3, gf: 19, ga: 16 },
+            { id: 't6', name: 'TGM Wien Wizards', city: 'Wien', color: '#ec4899', rating: 77, studiengang: 'Elektronik & IT', form: 3.5, points: 16, played: 10, w: 5, d: 1, l: 4, gf: 18, ga: 17 },
+            { id: 't7', name: 'WU Executive Eagles', city: 'Wien', color: '#06b6d4', rating: 76, studiengang: 'Business Administration', form: 3.0, points: 14, played: 10, w: 4, d: 2, l: 4, gf: 16, ga: 18 },
+            { id: 't8', name: 'FH Upper Austria Cyberhawks', city: 'Linz', color: '#f97316', rating: 75, studiengang: 'Informatik & Kommunikation', form: 3.0, points: 12, played: 10, w: 3, d: 3, l: 4, gf: 15, ga: 19 },
+            { id: 't9', name: 'Uni Salzburg Bulls', city: 'Salzburg', color: '#84cc16', rating: 74, studiengang: 'Geistes- & Naturwissenschaften', form: 3.0, points: 10, played: 10, w: 3, d: 1, l: 6, gf: 13, ga: 22 },
+            { id: 't10', name: 'IMC Krems Sharks', city: 'Niederösterreich', color: '#6366f1', rating: 73, studiengang: 'Life Sciences', form: 2.5, points: 8, played: 10, w: 2, d: 2, l: 6, gf: 11, ga: 24 },
+            { id: 't11', name: 'FH Kärnten Dragons', city: 'Villach', color: '#14b8a6', rating: 72, studiengang: 'Systems Engineering', form: 2.5, points: 6, played: 10, w: 1, d: 3, l: 6, gf: 10, ga: 25 },
+            { id: 't12', name: 'Vorarlberg Tech Falcons', city: 'Dornbirn', color: '#a855f7', rating: 70, studiengang: 'Mechatronik & Wirtschaft', form: 2.0, points: 4, played: 10, w: 1, d: 1, l: 8, gf: 8, ga: 28 }
+        ];
+
+        // SQUADS (11 starters + 5 subs = 16 players in 4-3-3 tactical formation)
+        const positionNames = ['TW', 'LV', 'IV1', 'IV2', 'RV', 'ZDM', 'ZM', 'ZOM', 'LF', 'ST', 'RF', 'SUB1', 'SUB2', 'SUB3', 'SUB4', 'SUB5'];
+        const positionRoles = ['Torwart', 'Linker Verteidiger', 'Innenverteidiger', 'Innenverteidiger', 'Rechter Verteidiger', 'Defensives Mittelfeld', 'Zentrales Mittelfeld', 'Offensives Mittelfeld', 'Linker Flügel', 'Mittelstürmer', 'Rechter Flügel', 'Ersatz-Torwart', 'Ersatz-Verteidiger', 'Ersatz-Mittelfeld', 'Ersatz-Stürmer', 'Ersatz-Joker'];
+
+        let teamSquads = {};
+
+        function initSquads() {
+            teamsData.forEach(team => {
+                let squad = [];
+                for (let i = 0; i < 16; i++) {
+                    let baseRating = Math.min(9.9, Math.max(5.5, (team.rating / 10) + (Math.random() * 1.2 - 0.6)));
+                    let stars = Math.min(5, Math.max(2, Math.round((baseRating / 2) * 2) / 2));
+                    
+                    squad.push({
+                        id: `${team.id}_p${i+1}`,
+                        number: i + 1,
+                        name: getSamplePlayerName(i, team.name),
+                        pos: positionNames[i],
+                        role: positionRoles[i],
+                        studiengang: team.studiengang + ' B.Sc.',
+                        age: 20 + Math.floor(Math.random() * 5),
+                        stars: stars,
+                        rating: parseFloat(baseRating.toFixed(1)),
+                        goals: Math.floor(Math.random() * 5),
+                        assists: Math.floor(Math.random() * 6)
+                    });
+                }
+                teamSquads[team.id] = squad;
+            });
+        }
+
+        function getSamplePlayerName(index, teamName) {
+            const firstNames = ['Lukas', 'Julian', 'Maximilian', 'Leon', 'Paul', 'Felix', 'David', 'Tim', 'Jonas', 'Niklas', 'Sven', 'Marco', 'Tobias', 'Florian', 'Daniel', 'Simon'];
+            const lastNames = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Hoffmann', 'Schäfer', 'Koch', 'Bauer', 'Richter', 'Klein', 'Wolf', 'Schröder'];
+            return firstNames[(index * 3) % firstNames.length] + ' ' + lastNames[(index * 2) % lastNames.length];
+        }
+
+        // ALGO MODIFIERS
+        let algoParams = {
+            homeAdv: 3.5,
+            fatigue: 2.0,
+            formVar: 4.0,
+            tactical: 5.0,
+            coach: 3.0,
+            travel: 1.5
+        };
+
+        function updateAlgoParam(param, val) {
+            algoParams[param] = parseFloat(val);
+            document.getElementById(`val${param.charAt(0).toUpperCase() + param.slice(1)}`).innerText = val;
+        }
+
+        // TOURNAMENT STATE (Stage 0: start, Stage 1: QF & SF done, Stage 2: Live Final)
+        let tournamentState = {
+            stage: 0,
+            qf: [
+                { id: 'qf1', t1: 't1', t2: 't8', score1: 0, score2: 0, winner: null },
+                { id: 'qf2', t1: 't4', t2: 't5', score1: 0, score2: 0, winner: null },
+                { id: 'qf3', t1: 't2', t2: 't7', score1: 0, score2: 0, winner: null },
+                { id: 'qf4', t1: 't3', t2: 't6', score1: 0, score2: 0, winner: null }
+            ],
+            sf: [
+                { id: 'sf1', t1: null, t2: null, score1: 0, score2: 0, winner: null },
+                { id: 'sf2', t1: null, t2: null, score1: 0, score2: 0, winner: null }
+            ],
+            final: { id: 'final', t1: null, t2: null, score1: 0, score2: 0, winner: null }
+        };
+
+        let liveMatchTimer = null;
+        let matchSecond = 0;
+
+        function calculateTeamPower(teamId, isHome = true) {
+            const team = teamsData.find(t => t.id === teamId);
+            if (!team) return 50;
+            let homeBonus = isHome ? algoParams.homeAdv : 0;
+            let formBonus = team.form * (algoParams.formVar / 2);
+            let tacticalBonus = algoParams.tactical - algoParams.fatigue;
+            return team.rating + homeBonus + formBonus + tacticalBonus;
+        }
+
+        function simulateMatchScore(t1Id, t2Id) {
+            let p1 = calculateTeamPower(t1Id, true);
+            let p2 = calculateTeamPower(t2Id, false);
+            let diff = (p1 - p2) / 10;
+            let g1 = Math.max(0, Math.round(1.5 + diff + (Math.random() * 2 - 1)));
+            let g2 = Math.max(0, Math.round(1.2 - diff + (Math.random() * 2 - 1)));
+            if (g1 === g2) {
+                if (Math.random() > 0.5) g1 += 1; else g2 += 1;
+            }
+            return { score1: g1, score2: g2, winner: g1 > g2 ? t1Id : t2Id };
+        }
+
+        // STAGE 1: SIMULATE UP TO SEMIFINALS
+        function simulateStage1() {
+            if (tournamentState.stage >= 1) return;
+
+            tournamentState.qf.forEach(m => {
+                let res = simulateMatchScore(m.t1, m.t2);
+                m.score1 = res.score1;
+                m.score2 = res.score2;
+                m.winner = res.winner;
+            });
+
+            tournamentState.sf[0].t1 = tournamentState.qf[0].winner;
+            tournamentState.sf[0].t2 = tournamentState.qf[1].winner;
+            tournamentState.sf[1].t1 = tournamentState.qf[2].winner;
+            tournamentState.sf[1].t2 = tournamentState.qf[3].winner;
+
+            tournamentState.sf.forEach(m => {
+                let res = simulateMatchScore(m.t1, m.t2);
+                m.score1 = res.score1;
+                m.score2 = res.score2;
+                m.winner = res.winner;
+            });
+
+            tournamentState.final.t1 = tournamentState.sf[0].winner;
+            tournamentState.final.t2 = tournamentState.sf[1].winner;
+            tournamentState.stage = 1;
+
+            updateBracketUI();
+
+            const btnFinal = document.getElementById('btnStartLiveFinal');
+            btnFinal.disabled = false;
+            btnFinal.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-700');
+            btnFinal.classList.add('bg-accent-green', 'hover:bg-green-600', 'animate-pulse');
+
+            setupLiveFinalDashboard();
+        }
+
+        function setupLiveFinalDashboard() {
+            const teamA = teamsData.find(t => t.id === tournamentState.final.t1);
+            const teamB = teamsData.find(t => t.id === tournamentState.final.t2);
+
+            document.getElementById('liveFinalDashboard').classList.remove('hidden');
+            document.getElementById('finalTeamAName').innerText = teamA.name;
+            document.getElementById('finalTeamBName').innerText = teamB.name;
+            document.getElementById('finalTeamAIcon').innerText = teamA.name.substring(0, 2).toUpperCase();
+            document.getElementById('finalTeamBIcon').innerText = teamB.name.substring(0, 2).toUpperCase();
+            document.getElementById('finalTeamAForm').innerText = `Form: ${'★'.repeat(Math.floor(teamA.form))}`;
+            document.getElementById('finalTeamBForm').innerText = `Form: ${'★'.repeat(Math.floor(teamB.form))}`;
+
+            document.getElementById('finalScore').innerText = '0 - 0';
+            document.getElementById('matchTimer').innerText = "00' (0s)";
+
+            renderTacticalPitch();
+        }
+
+        // STAGE 2: 90-SECOND LIVE FINAL
+        function startLiveFinal() {
+            if (tournamentState.stage === 2) return;
+            tournamentState.stage = 2;
+
+            const btnFinal = document.getElementById('btnStartLiveFinal');
+            btnFinal.disabled = true;
+            btnFinal.classList.remove('animate-pulse', 'bg-accent-green');
+            btnFinal.classList.add('bg-gray-700', 'opacity-50');
+
+            matchSecond = 0;
+            tournamentState.final.score1 = 0;
+            tournamentState.final.score2 = 0;
+
+            const teamA = teamsData.find(t => t.id === tournamentState.final.t1);
+            const teamB = teamsData.find(t => t.id === tournamentState.final.t2);
+
+            addTickerEvent(0, 'whistle', `Anpfiff! Das große Finale zwischen ${teamA.name} und ${teamB.name} läuft!`);
+
+            liveMatchTimer = setInterval(() => {
+                matchSecond++;
+                let minStr = matchSecond < 10 ? `0${matchSecond}` : `${matchSecond}`;
+                document.getElementById('matchTimer').innerText = `${minStr}' (${matchSecond}s)`;
+
+                evaluateLiveEvents(matchSecond, teamA, teamB);
+
+                if (matchSecond >= 90) {
+                    clearInterval(liveMatchTimer);
+                    finishLiveFinal(teamA, teamB);
+                }
+            }, 1000);
+        }
+
+        function evaluateLiveEvents(min, teamA, teamB) {
+            let rand = Math.random();
+            if (rand < 0.06) {
+                let isTeamA = Math.random() < (teamA.rating / (teamA.rating + teamB.rating));
+                let scoringTeam = isTeamA ? teamA : teamB;
+                let opponentTeam = isTeamA ? teamB : teamA;
+
+                if (isTeamA) tournamentState.final.score1++;
+                else tournamentState.final.score2++;
+
+                document.getElementById('finalScore').innerText = `${tournamentState.final.score1} - ${tournamentState.final.score2}`;
+
+                let squad = teamSquads[scoringTeam.id];
+                let scorer = squad[Math.floor(Math.random() * 4) + 7];
+                let assist = squad[Math.floor(Math.random() * 4) + 4];
+
+                scorer.rating = Math.min(10.0, parseFloat((scorer.rating + 1.0).toFixed(1)));
+                scorer.goals++;
+                assist.rating = Math.min(10.0, parseFloat((assist.rating + 0.5).toFixed(1)));
+                assist.assists++;
+
+                addTickerEvent(min, 'goal', `⚽ TOR für ${scoringTeam.name}! ${scorer.name} trifft zum ${tournamentState.final.score1}:${tournamentState.final.score2}! (Assist: ${assist.name})`);
+                renderTacticalPitch();
+            } else if (rand < 0.12) {
+                let isTeamA = Math.random() > 0.5;
+                let team = isTeamA ? teamA : teamB;
+                let squad = teamSquads[team.id];
+                let gk = squad[0];
+                gk.rating = Math.min(10.0, parseFloat((gk.rating + 0.5).toFixed(1)));
+                addTickerEvent(min, 'save', `🧤 Glanzparade von Torwart ${gk.name} (${team.name})!`);
+                renderTacticalPitch();
+            }
+        }
+
+        function finishLiveFinal(teamA, teamB) {
+            let s1 = tournamentState.final.score1;
+            let s2 = tournamentState.final.score2;
+            if (s1 === s2) {
+                if (Math.random() > 0.5) s1++; else s2++;
+                tournamentState.final.score1 = s1;
+                tournamentState.final.score2 = s2;
+            }
+
+            let winnerId = s1 > s2 ? teamA.id : teamB.id;
+            let winnerTeam = teamsData.find(t => t.id === winnerId);
+            tournamentState.final.winner = winnerId;
+
+            document.getElementById('liveDot').classList.remove('bg-red-500', 'animate-pulse');
+            document.getElementById('liveDot').classList.add('bg-gray-500');
+            document.getElementById('liveStatusText').innerText = "BEENDET";
+
+            addTickerEvent(90, 'trophy', `🏆 SCHLUSSPFIFF! ${winnerTeam.name} gewinnt das Finale und den Hochschul-Cup 2026!`);
+            document.getElementById('winnerBanner').classList.remove('hidden');
+            document.getElementById('winnerText').innerText = winnerTeam.name;
+
+            updateBracketUI();
+        }
+
+        // FOTMOB 11v11 TACTICAL PITCH
+        function switchPitchTeam(teamLetter) {
+            activePitchTeam = teamLetter;
+            document.getElementById('pitchBtnA').className = teamLetter === 'A' ? 'px-2.5 py-1 rounded bg-accent-blue text-white font-medium' : 'px-2.5 py-1 rounded bg-navy-700 text-gray-300 hover:bg-gray-700 font-medium';
+            document.getElementById('pitchBtnB').className = teamLetter === 'B' ? 'px-2.5 py-1 rounded bg-accent-green text-white font-medium' : 'px-2.5 py-1 rounded bg-navy-700 text-gray-300 hover:bg-gray-700 font-medium';
+            renderTacticalPitch();
+        }
+
+        function renderTacticalPitch() {
+            const pitch = document.getElementById('pitchFormation');
+            if (!pitch) return;
+
+            const teamId = activePitchTeam === 'A' ? tournamentState.final.t1 : tournamentState.final.t2;
+            if (!teamId) {
+                pitch.innerHTML = `<div class="text-center text-gray-500 my-auto">Starte die Turniersimulation, um die Aufstellung zu sehen.</div>`;
+                return;
+            }
+
+            const squad = teamSquads[teamId];
+            if (!squad) return;
+
+            // 4-3-3: Attackers (8,9,10), Midfielders (5,7,6), Defenders (1,2,3,4), GK (0)
+            pitch.innerHTML = `
+                <div class="flex justify-around items-center w-full">
+                    ${renderPlayerBadge(squad[8])}
+                    ${renderPlayerBadge(squad[9])}
+                    ${renderPlayerBadge(squad[10])}
+                </div>
+                <div class="flex justify-around items-center w-full px-6">
+                    ${renderPlayerBadge(squad[5])}
+                    ${renderPlayerBadge(squad[7])}
+                    ${renderPlayerBadge(squad[6])}
+                </div>
+                <div class="flex justify-around items-center w-full">
+                    ${renderPlayerBadge(squad[1])}
+                    ${renderPlayerBadge(squad[2])}
+                    ${renderPlayerBadge(squad[3])}
+                    ${renderPlayerBadge(squad[4])}
+                </div>
+                <div class="flex justify-center items-center w-full">
+                    ${renderPlayerBadge(squad[0])}
+                </div>
+            `;
+        }
+
+        function renderPlayerBadge(player) {
+            let ratingBg = player.rating >= 7.5 ? 'bg-green-600' : (player.rating >= 6.0 ? 'bg-yellow-600' : 'bg-red-600');
+            return `
+                <div onclick="openPlayerModal('${player.id}')" class="flex flex-col items-center group cursor-pointer transition transform hover:scale-110">
+                    <div class="relative">
+                        <div class="w-9 h-9 rounded-full bg-navy-800 border-2 border-gray-300 flex items-center justify-center font-bold text-xs text-white shadow-md">
+                            ${player.number}
+                        </div>
+                        <span class="absolute -bottom-1 -right-2 ${ratingBg} text-white font-extrabold text-[10px] px-1.5 py-0.2 rounded-full shadow border border-navy-900">
+                            ${player.rating.toFixed(1)}
+                        </span>
+                    </div>
+                    <span class="text-[11px] font-semibold text-white mt-1 drop-shadow bg-navy-900/80 px-1.5 py-0.5 rounded truncate max-w-[80px]">
+                        ${player.name.split(' ')[1] || player.name}
+                    </span>
+                </div>
+            `;
+        }
+
+        function addTickerEvent(min, type, message) {
+            const container = document.getElementById('tickerContainer');
+            if (!container) return;
+            let icon = type === 'goal' ? 'fa-circle-dot text-accent-green' : (type === 'save' ? 'fa-hand text-accent-blue' : 'fa-futbol text-accent-blue');
+            const item = document.createElement('div');
+            item.className = 'bg-navy-800 border border-gray-800 p-2.5 rounded-xl flex items-start space-x-2.5';
+            item.innerHTML = `
+                <span class="font-mono font-bold text-accent-blue bg-navy-900 px-1.5 py-0.5 rounded text-[10px] shrink-0">${min}'</span>
+                <i class="fa-solid ${icon} mt-0.5 text-xs"></i>
+                <p class="text-gray-200 text-xs leading-relaxed">${message}</p>
+            `;
+            container.prepend(item);
+        }
+
+        function updateBracketUI() {
+            tournamentState.qf.forEach((qf, idx) => {
+                const t1 = teamsData.find(t => t.id === qf.t1);
+                const t2 = teamsData.find(t => t.id === qf.t2);
+                document.getElementById(`qf${idx+1}-t1`).innerHTML = `<span>${t1.name}</span> <span class="font-bold border px-1.5 py-0.5 rounded ${qf.winner === qf.t1 ? 'bg-accent-green/20 text-accent-green border-accent-green' : 'bg-navy-800'}">${qf.score1}</span>`;
+                document.getElementById(`qf${idx+1}-t2`).innerHTML = `<span>${t2.name}</span> <span class="font-bold border px-1.5 py-0.5 rounded ${qf.winner === qf.t2 ? 'bg-accent-green/20 text-accent-green border-accent-green' : 'bg-navy-800'}">${qf.score2}</span>`;
+            });
+
+            tournamentState.sf.forEach((sf, idx) => {
+                if (sf.t1 && sf.t2) {
+                    const t1 = teamsData.find(t => t.id === sf.t1);
+                    const t2 = teamsData.find(t => t.id === sf.t2);
+                    document.getElementById(`sf${idx+1}-t1`).innerHTML = `<span>${t1.name}</span> <span class="font-bold border px-1.5 py-0.5 rounded ${sf.winner === sf.t1 ? 'bg-accent-green/20 text-accent-green border-accent-green' : 'bg-navy-800'}">${sf.score1}</span>`;
+                    document.getElementById(`sf${idx+1}-t2`).innerHTML = `<span>${t2.name}</span> <span class="font-bold border px-1.5 py-0.5 rounded ${sf.winner === sf.t2 ? 'bg-accent-green/20 text-accent-green border-accent-green' : 'bg-navy-800'}">${sf.score2}</span>`;
+                }
+            });
+
+            if (tournamentState.final.t1 && tournamentState.final.t2) {
+                const t1 = teamsData.find(t => t.id === tournamentState.final.t1);
+                const t2 = teamsData.find(t => t.id === tournamentState.final.t2);
+                document.getElementById('final-t1').innerHTML = `<span>${t1.name}</span> <span class="border px-2 py-0.5 rounded ${tournamentState.final.winner === t1.id ? 'bg-accent-gold/20 text-accent-gold border-accent-gold' : 'bg-navy-800'}">${tournamentState.final.score1}</span>`;
+                document.getElementById('final-t2').innerHTML = `<span>${t2.name}</span> <span class="border px-2 py-0.5 rounded ${tournamentState.final.winner === t2.id ? 'bg-accent-gold/20 text-accent-gold border-accent-gold' : 'bg-navy-800'}">${tournamentState.final.score2}</span>`;
+            }
+        }
+
+        function resetTournament() {
+            if (liveMatchTimer) clearInterval(liveMatchTimer);
+            tournamentState = {
+                stage: 0,
+                qf: [
+                    { id: 'qf1', t1: 't1', t2: 't8', score1: 0, score2: 0, winner: null },
+                    { id: 'qf2', t1: 't4', t2: 't5', score1: 0, score2: 0, winner: null },
+                    { id: 'qf3', t1: 't2', t2: 't7', score1: 0, score2: 0, winner: null },
+                    { id: 'qf4', t1: 't3', t2: 't6', score1: 0, score2: 0, winner: null }
+                ],
+                sf: [
+                    { id: 'sf1', t1: null, t2: null, score1: 0, score2: 0, winner: null },
+                    { id: 'sf2', t1: null, t2: null, score1: 0, score2: 0, winner: null }
+                ],
+                final: { id: 'final', t1: null, t2: null, score1: 0, score2: 0, winner: null }
+            };
+            initSquads();
+            document.getElementById('liveFinalDashboard').classList.add('hidden');
+            document.getElementById('btnStartLiveFinal').disabled = true;
+            document.getElementById('btnStartLiveFinal').className = "flex-1 lg:flex-none px-5 py-2.5 bg-gray-700 opacity-50 cursor-not-allowed text-white font-semibold rounded-xl transition shadow-md flex items-center justify-center gap-2";
+            document.getElementById('tickerContainer').innerHTML = '<div class="text-gray-500 italic text-center py-8">Das Spiel steht bereit. Klicken Sie auf "Stufe 2: Finale Live", um zu starten.</div>';
+            document.getElementById('winnerBanner').classList.add('hidden');
+            updateBracketUI();
+        }
+
+        // SQUAD VIEW
+        function renderSquadTable(teamId) {
+            const squad = teamSquads[teamId] || [];
+            const tbody = document.getElementById('squadTableBody');
+            tbody.innerHTML = '';
+
+            squad.forEach(p => {
+                let starHtml = '';
+                let fullStars = Math.floor(p.stars);
+                let halfStar = (p.stars % 1) !== 0;
+                for (let i = 0; i < fullStars; i++) starHtml += '<i class="fa-solid fa-star text-accent-gold text-xs"></i>';
+                if (halfStar) starHtml += '<i class="fa-solid fa-star-half-stroke text-accent-gold text-xs"></i>';
+                for (let i = (fullStars + (halfStar ? 1 : 0)); i < 5; i++) starHtml += '<i class="fa-regular fa-star text-gray-600 text-xs"></i>';
+
+                let tr = document.createElement('tr');
+                tr.className = 'hover:bg-navy-900/50 transition cursor-pointer';
+                tr.onclick = () => openPlayerModal(p.id);
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-accent-blue">${p.pos}</td>
+                    <td class="p-3 font-semibold text-white">${p.name}</td>
+                    <td class="p-3 text-xs text-gray-400">${p.studiengang}</td>
+                    <td class="p-3 text-xs text-gray-400">${p.age} J.</td>
+                    <td class="p-3">${starHtml} <span class="text-xs text-gray-400 ml-1">(${p.stars})</span></td>
+                    <td class="p-3 text-xs text-accent-green">Topfit</td>
+                    <td class="p-3 text-right">
+                        ${isAdmin ? `<button onclick="event.stopPropagation(); editPlayerRating('${teamId}', '${p.id}')" class="text-xs bg-navy-700 hover:bg-gray-700 text-white px-2 py-1 rounded">Edit</button>` : '<span class="text-xs text-gray-600">Details</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function editPlayerRating(teamId, playerId) {
+            let player = teamSquads[teamId].find(p => p.id === playerId);
+            if (!player) return;
+            let newRat = prompt(`Neues Rating für ${player.name} (4.0 - 10.0):`, player.rating);
+            if (newRat !== null) {
+                player.rating = Math.min(10.0, Math.max(4.0, parseFloat(newRat) || player.rating));
+                renderSquadTable(teamId);
+            }
+        }
+
+        // PLAYER MODAL
+        function openPlayerModal(playerId) {
+            let foundPlayer = null;
+            let foundTeamName = '';
+            for (let tId in teamSquads) {
+                let p = teamSquads[tId].find(x => x.id === playerId);
+                if (p) {
+                    foundPlayer = p;
+                    foundTeamName = teamsData.find(t => t.id === tId).name;
+                    break;
+                }
+            }
+            if (!foundPlayer) return;
+
+            document.getElementById('modalPlayerPos').innerText = foundPlayer.pos;
+            document.getElementById('modalPlayerName').innerText = foundPlayer.name;
+            document.getElementById('modalPlayerTeam').innerText = foundTeamName;
+            document.getElementById('modalPlayerStudy').innerText = foundPlayer.studiengang;
+            document.getElementById('modalPlayerStars').innerText = `${'★'.repeat(Math.floor(foundPlayer.stars))} (${foundPlayer.stars})`;
+            document.getElementById('modalPlayerGoals').innerText = `${foundPlayer.goals} Tore / ${foundPlayer.assists} Vorlagen`;
+
+            document.getElementById('playerModal').classList.remove('hidden');
+        }
+
+        function closePlayerModal() {
+            document.getElementById('playerModal').classList.add('hidden');
+        }
+
+        // ALGORITHM TEST MATCH
+        function runAlgorithmTestMatch() {
+            let t1 = teamsData[Math.floor(Math.random() * teamsData.length)];
+            let t2 = teamsData[Math.floor(Math.random() * teamsData.length)];
+            while (t1.id === t2.id) t2 = teamsData[Math.floor(Math.random() * teamsData.length)];
+
+            let res = simulateMatchScore(t1.id, t2.id);
+            alert(`Testspiel-Ergebnis (Algorithmus 1A & 1B aktiv):\n${t1.name} ${res.score1} : ${res.score2} ${t2.name}\nSieger: ${res.score1 > res.score2 ? t1.name : t2.name}`);
+        }
+
+        // LEAGUE TABLE
+        function renderLeagueTable() {
+            const tbody = document.getElementById('leagueTableBody');
+            tbody.innerHTML = '';
+            let sorted = [...teamsData].sort((a, b) => b.points - a.points || (b.gf - b.ga) - (a.gf - a.ga));
+
+            sorted.forEach((t, idx) => {
+                let tr = document.createElement('tr');
+                tr.className = t.id === activeFavoriteTeamId ? 'bg-accent-blue/10 font-semibold' : 'hover:bg-navy-900/50';
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-gray-400">${idx + 1}</td>
+                    <td class="p-3 font-semibold text-white flex items-center gap-2">
+                        ${t.id === activeFavoriteTeamId ? '<i class="fa-solid fa-heart text-red-500 text-xs"></i>' : ''}
+                        ${t.name} <span class="text-xs text-gray-500 font-normal">(${t.city})</span>
+                    </td>
+                    <td class="p-3 text-center">${t.played}</td>
+                    <td class="p-3 text-center text-gray-400">${t.w}</td>
+                    <td class="p-3 text-center text-gray-400">${t.d}</td>
+                    <td class="p-3 text-center text-gray-400">${t.l}</td>
+                    <td class="p-3 text-center text-gray-400">${t.gf}:${t.ga}</td>
+                    <td class="p-3 text-center ${t.gf - t.ga >= 0 ? 'text-accent-green' : 'text-red-400'}">${t.gf - t.ga}</td>
+                    <td class="p-3 text-center font-black text-white">${t.points}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // DASHBOARD FAVORITE TEAM SHOWCASE
+        function renderDashboardFavorite() {
+            const fav = teamsData.find(t => t.id === activeFavoriteTeamId) || teamsData[0];
+            const squad = teamSquads[fav.id] || [];
+            const showcase = document.getElementById('favoriteTeamShowcase');
+
+            showcase.innerHTML = `
+                <div>
+                    <h4 class="font-extrabold text-lg text-white">${fav.name}</h4>
+                    <p class="text-xs text-gray-400">Standort: ${fav.city} • Fokus: ${fav.studiengang}</p>
+                    <div class="mt-3 flex items-center space-x-3">
+                        <span class="bg-navy-800 border border-gray-700 px-3 py-1 rounded-lg text-xs font-bold text-accent-blue">Rating: ${fav.rating}</span>
+                        <span class="bg-navy-800 border border-gray-700 px-3 py-1 rounded-lg text-xs font-bold text-accent-gold">Form: ${'★'.repeat(Math.floor(fav.form))}</span>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <h5 class="text-xs font-bold text-gray-400 mb-2">Top-Spieler im Kader:</h5>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        ${squad.slice(0, 3).map(p => `
+                            <div class="bg-navy-800 p-2 rounded-xl border border-gray-800 text-xs">
+                                <span class="font-bold text-white block truncate">${p.name}</span>
+                                <span class="text-accent-blue text-[10px]">${p.pos} • ${p.stars} ⭐</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // NAVIGATION & FAVORITE CHANGE
+        function switchTab(tabId) {
+            ['dashboard', 'tournament', 'squad', 'algorithms', 'table'].forEach(id => {
+                const sec = document.getElementById(`sec-${id}`);
+                const tab = document.getElementById(`tab-${id}`);
+                if (sec) sec.classList.add('hidden');
+                if (tab) tab.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white";
+            });
+
+            const activeSec = document.getElementById(`sec-${tabId}`);
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if (activeSec) activeSec.classList.remove('hidden');
+            if (activeTab) activeTab.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-white bg-accent-blue/20 border border-accent-blue/40";
+        }
+
+        function populateTeamDropdowns() {
+            const favSelect = document.getElementById('favTeamSelect');
+            const squadSelect = document.getElementById('squadTeamSelect');
+            if (!favSelect || !squadSelect) return;
+
+            favSelect.innerHTML = '';
+            squadSelect.innerHTML = '';
+
+            teamsData.forEach(t => {
+                let opt1 = new Option(t.name, t.id);
+                let opt2 = new Option(t.name, t.id);
+                favSelect.add(opt1);
+                squadSelect.add(opt2);
+            });
+
+            favSelect.value = activeFavoriteTeamId;
+            squadSelect.value = activeFavoriteTeamId;
+        }
+
+        function changeFavoriteTeam(teamId) {
+            activeFavoriteTeamId = teamId;
+            localStorage.setItem('fh_fav_team', teamId);
+            renderLeagueTable();
+            renderDashboardFavorite();
+        }
+
+        function toggleAdminMode() {
+            isAdmin = !isAdmin;
+            const btn = document.getElementById('adminBtn');
+            const status = document.getElementById('adminStatus');
+
+            if (isAdmin) {
+                status.innerText = 'Admin: AN';
+                btn.classList.add('bg-accent-blue', 'text-white', 'border-accent-blue');
+            } else {
+                status.innerText = 'Admin: AUS';
+                btn.classList.remove('bg-accent-blue', 'text-white', 'border-accent-blue');
+            }
+            renderSquadTable(document.getElementById('squadTeamSelect').value);
+        }
+
+        // LOAD ON START
+        window.onload = function() {
+            const savedFav = localStorage.getItem('fh_fav_team');
+            if (savedFav) activeFavoriteTeamId = savedFav;
+
+            initSquads();
+            populateTeamDropdowns();
+            updateBracketUI();
+            renderSquadTable(activeFavoriteTeamId);
+            renderLeagueTable();
+            renderDashboardFavorite();
+        };
+    </script>
+</body>
+</html>
