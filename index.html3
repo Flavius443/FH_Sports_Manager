@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FH-Sports Manager - Hochschul-Fußball</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            900: '#0b0f19',
+                            800: '#111827',
+                            700: '#1f2937',
+                            600: '#374151'
+                        },
+                        accent: {
+                            green: '#10b981',
+                            blue: '#3b82f6',
+                            gold: '#f59e0b',
+                            orange: '#f97316',
+                            red: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        .pitch-bg {
+            background: linear-gradient(135deg, #0d3b1e 0%, #082412 100%);
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .pitch-line {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            pointer-events: none;
+        }
+
+        .rating-up {
+            animation: pulse-green 1s ease-out;
+        }
+
+        .rating-down {
+            animation: pulse-red 1s ease-out;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1.2); background-color: #059669; }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1.2); background-color: #dc2626; }
+            100% { transform: scale(1); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-navy-900 text-gray-100 min-h-screen flex flex-col overflow-x-hidden">
+
+    <!-- TOP HEADER -->
+    <header class="bg-navy-800 border-b border-gray-800 sticky top-0 z-50 px-4 py-3 flex flex-wrap justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gradient-to-tr from-accent-blue to-accent-orange p-2.5 rounded-xl text-white shadow-md">
+                <i class="fa-solid fa-futbol text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">FH-Sports Manager</h1>
+                <p class="text-xs text-gray-400 mt-0.5">Hochschulliga • <span id="currentSemesterLabel">WS 2026/27</span></p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-4 mt-2 sm:mt-0">
+            <div class="flex items-center space-x-2 bg-navy-900/80 px-3 py-1.5 rounded-lg border border-gray-700">
+                <i class="fa-solid fa-heart text-red-500 text-sm"></i>
+                <label for="favTeamSelect" class="text-xs text-gray-400">Lieblingsteam:</label>
+                <select id="favTeamSelect" onchange="changeFavoriteTeam(this.value)" class="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer">
+                </select>
+            </div>
+
+            <button onclick="toggleAdminMode()" id="adminBtn" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-700 bg-navy-700 hover:bg-gray-700 transition">
+                <i class="fa-solid fa-user-gear"></i>
+                <span id="adminStatus">Admin: AUS</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN WRAPPER -->
+    <div class="flex-1 flex flex-col md:flex-row">
+
+        <!-- NAVIGATION SIDEBAR -->
+        <aside class="w-full md:w-64 bg-navy-800 border-r border-gray-800 p-4 shrink-0">
+            <nav class="space-y-1">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-white bg-accent-blue/20 border border-accent-blue/40">
+                    <i class="fa-solid fa-house text-accent-blue"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('tournament')" id="tab-tournament" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-diagram-project text-gray-400"></i>
+                    <span>Turnierbaum & Live</span>
+                </button>
+                <button onclick="switchTab('squad')" id="tab-squad" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-users text-gray-400"></i>
+                    <span>Teams & Kader (4-3-3)</span>
+                </button>
+                <button onclick="switchTab('algorithms')" id="tab-algorithms" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-brain text-accent-orange"></i>
+                    <span>Algorithmen (1A & 1B)</span>
+                </button>
+                <button onclick="switchTab('table')" id="tab-table" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-sm transition text-gray-400 hover:bg-navy-700 hover:text-white">
+                    <i class="fa-solid fa-list-ol text-gray-400"></i>
+                    <span>Ligatabelle & Stats</span>
+                </button>
+            </nav>
+
+            <div class="mt-8 p-3.5 bg-navy-900/60 rounded-xl border border-gray-800 text-xs text-gray-400 space-y-2">
+                <div class="flex justify-between items-center text-gray-300 font-semibold border-b border-gray-800 pb-1.5">
+                    <span><i class="fa-solid fa-microchip text-accent-blue mr-1"></i> AI Simulation</span>
+                    <span class="text-accent-green">Active</span>
+                </div>
+                <p><strong>1A (Internal):</strong> Fatigue, Form, Home</p>
+                <p><strong>1B (AI-Driven):</strong> Tactics, Coach, Travel</p>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto">
+
+            <!-- TAB 0: DASHBOARD -->
+            <section id="sec-dashboard" class="space-y-6">
+                <div class="bg-gradient-to-r from-navy-800 to-navy-700 p-6 rounded-2xl border border-gray-700 shadow-xl flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="space-y-2">
+                        <span class="bg-accent-blue/20 text-accent-blue border border-accent-blue/30 text-xs font-bold px-3 py-1 rounded-full">Hochschul-Cup 2026/27</span>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-white">Willkommen beim FH-Sports Manager</h2>
+                        <p class="text-sm text-gray-300 max-w-xl">Verwalte dein Team, simuliere die österreichische Hochschulmeisterschaft mit 12 einzigartigen Teams, setze Algorithmen ein und verfolge das Live-Finale mit FotMob-Bewertungen!</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="switchTab('tournament')" class="px-5 py-3 bg-accent-blue hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-play"></i> Zum Turnierbaum
+                        </button>
+                        <button onclick="switchTab('squad')" class="px-5 py-3 bg-navy-600 hover:bg-gray-600 text-white font-semibold rounded-xl border border-gray-600 transition flex items-center gap-2">
+                            <i class="fa-solid fa-users"></i> Kader ansehen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-blue/20 text-accent-blue rounded-xl"><i class="fa-solid fa-shield-halved text-xl"></i></div>
+                        <div>
+                            <div class="text-xs text-gray-400">Teilnehmende Teams</div>
+                            <div class="text-xl font-extrabold text-white">12 Unis & FHs</div>
+                        </div>
+                    </div>
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-green/20 text-accent-green rounded-xl"><i class="fa-solid fa-user-group text-xl"></i></div>
+                        <div>
+                            <div class="text-xs text-gray-400">Spieler im Kader</div>
+                            <div class="text-xl font-extrabold text-white">192 Aktive</div>
+                        </div>
+                    </div>
+                    <div class="bg-navy-800 p-4 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                        <div class="p-3 bg-accent-gold/20 text-accent-gold rounded-xl"><i class="fa-solid fa-trophy text
